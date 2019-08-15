@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<Transactions>
-    <Transaction>1899.12.30 00:00:00.000.147,D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Unit1.pas=D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Parser\UMainForm.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.769,D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Project1.dproj=D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Parser\Parser.dproj</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.147,D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Unit1.dfm=D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Parser\UMainForm.dfm</Transaction>
     <Transaction>1899.12.30 00:00:00.000.428,=D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.769,D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Parser\Parser.dproj=D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.147,D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Parser\UMainForm.dfm=D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Unit1.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.147,D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Parser\UMainForm.pas=D:\Users\Vladimir\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
   </Transactions>
 </BorlandProject>
