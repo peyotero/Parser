@@ -247,58 +247,75 @@ object MainForm: TMainForm
     end
   end
   object ProgressBar1: TProgressBar
-    Left = 8
-    Top = 496
+    Left = 16
+    Top = 507
     Width = 119
     Height = 17
     Position = 100
     TabOrder = 4
   end
-  object ADOConnection1: TADOConnection
-    ConnectionString = 
-      'Provider=MSDASQL.1;Password="";Persist Security Info=True;User I' +
-      'D=root;Data Source=ozlotto'
-    LoginPrompt = False
-    Provider = 'MSDASQL.1'
-    Left = 640
-    Top = 16
-  end
-  object ADOTable1: TADOTable
-    Connection = ADOConnection1
-    CursorType = ctStatic
-    TableDirect = True
-    TableName = 'lotto_names'
-    Left = 48
-    Top = 152
-  end
   object DataSource1: TDataSource
-    DataSet = ADOTable1
+    DataSet = MyTable1
     Enabled = False
     Left = 48
     Top = 104
   end
   object DataSource2: TDataSource
-    DataSet = ADOTable2
+    DataSet = MyTable2
     Enabled = False
     Left = 248
     Top = 112
-  end
-  object ADOTable2: TADOTable
-    Connection = ADOConnection1
-    CursorType = ctStatic
-    LockType = ltReadOnly
-    Left = 248
-    Top = 160
-  end
-  object ADOQuery1: TADOQuery
-    Connection = ADOConnection1
-    Parameters = <>
-    Left = 712
-    Top = 16
   end
   object Timer1: TTimer
     OnTimer = Timer1Timer
     Left = 384
     Top = 16
+  end
+  object MyConnection1: TMyConnection
+    Server = 'localhost'
+    ConnectDialog = MyConnectDialog1
+    Left = 400
+    Top = 128
+  end
+  object MyQuery1: TMyQuery
+    Connection = MyConnection1
+    Left = 392
+    Top = 192
+  end
+  object MyTable1: TMyTable
+    Connection = MyConnection1
+    Left = 56
+    Top = 192
+  end
+  object MyTable2: TMyTable
+    Connection = MyConnection1
+    Left = 240
+    Top = 200
+  end
+  object MyConnectDialog1: TMyConnectDialog
+    Caption = 'MySQL Connect'
+    ConnectButton = 'Connect'
+    CancelButton = 'Cancel'
+    Server.Caption = 'Server'
+    Server.Visible = True
+    Server.Order = 0
+    UserName.Caption = 'User Name'
+    UserName.Visible = True
+    UserName.Order = 2
+    Password.Caption = 'Password'
+    Password.Visible = True
+    Password.Order = 3
+    Database.Caption = 'Database'
+    Database.Visible = True
+    Database.Order = 4
+    Port.Caption = 'Port'
+    Port.Visible = True
+    Port.Order = 1
+    Direct.Caption = 'Mode'
+    Direct.Visible = False
+    Direct.Order = 5
+    LabelSet = lsCustom
+    Left = 480
+    Top = 120
   end
 end

@@ -10,7 +10,8 @@ uses
   IdBaseComponent, IdComponent, IdTCPConnection, IdTCPClient, IdHTTP, IdSSL, IdSSLOpenSSL,
   Vcl.ExtCtrls, Vcl.OleCtrls, SHDocVw, MSHTML, ActiveX, UrlMon, IdCookieManager,
   IdZLibCompressorBase, IdCompressorZLib, IdIOHandler, IdIOHandlerSocket,
-  IdIOHandlerStack, Data.Win.ADODB, Vcl.DBGrids, Data.DB;
+  IdIOHandlerStack, Data.Win.ADODB, Vcl.DBGrids, Data.DB,
+  MyDacVcl, MyAccess, MemDS, DBAccess;
 
 type
 
@@ -28,21 +29,22 @@ type
     StartBtn: TButton;
     Panel2: TPanel;
     LogMemo: TMemo;
-    ADOConnection1: TADOConnection;
-    ADOTable1: TADOTable;
     Panel1: TPanel;
     DBGrid1: TDBGrid;
     DataSource1: TDataSource;
     DataSource2: TDataSource;
     DBGrid2: TDBGrid;
-    ADOQuery1: TADOQuery;
-    ADOTable2: TADOTable;
     UpDown1: TUpDown;
     Label1: TLabel;
     TimePanel: TPanel;
     Timer1: TTimer;
     Edit1: TEdit;
     ProgressBar1: TProgressBar;
+    MyConnection1: TMyConnection;
+    MyQuery1: TMyQuery;
+    MyTable1: TMyTable;
+    MyTable2: TMyTable;
+    MyConnectDialog1: TMyConnectDialog;
     procedure FormCreate(Sender: TObject);
     procedure StartBtnClick(Sender: TObject);
     procedure DBGrid1CellClick(Column: TColumn);
@@ -73,6 +75,10 @@ type
 
 var
   MainForm: TMainForm;
+  sServer : string;
+  sPort : string;
+  sUser : string;
+  sPswd : string;
 
 implementation
 
@@ -82,17 +88,17 @@ implementation
 procedure TMainForm.LoadLottoNames;
 begin
   try
-    ADOQuery1.SQL.Clear;
-    ADOQuery1.SQL.Add('CREATE TABLE IF NOT EXISTS lotto_names(id MEDIUMINT NOT NULL AUTO_INCREMENT, name VARCHAR(50) NOT NULL, PRIMARY KEY(id))');
-    ADOQuery1.ExecSQL;
+    MyQuery1.SQL.Clear;
+    MyQuery1.SQL.Add('CREATE TABLE IF NOT EXISTS lotto_names(id MEDIUMINT NOT NULL AUTO_INCREMENT, name VARCHAR(50) NOT NULL, PRIMARY KEY(id))');
+    MyQuery1.ExecSQL;
   finally
-    ADOTable1.TableName:='lotto_names';
-    ADOTable1.Active:=true;
-    if ADOTable1.RecordCount > 0 then begin
-      ADOTable1.First;
-      while not ADOTable1.Eof do begin
-        LottoNames.Add(ADOTable1.FieldByName('name').AsString);
-        ADOTable1.Next;
+    MyTable1.TableName:='lotto_names';
+    MyTable1.Active:=true;
+    if MyTable1.RecordCount > 0 then begin
+      MyTable1.First;
+      while not MyTable1.Eof do begin
+        LottoNames.Add(MyTable1.FieldByName('name').AsString);
+        MyTable1.Next;
       end;
     end;
     DataSource1.Enabled:=true;
@@ -104,7 +110,7 @@ end;
 procedure TMainForm.AppendLottoName(sname : string);
 begin
   LottoNames.Append(sname);
-  with ADOTable1 do begin
+  with MyTable1 do begin
     try
       Active:=true;
       Insert;
@@ -121,15 +127,15 @@ end;
 procedure TMainForm.UpdateLottoTable(le : TLotteryEvent);
 begin
   try
-    ADOQuery1.SQL.Clear;
-    ADOQuery1.SQL.Add('CREATE TABLE IF NOT EXISTS '+le.Name+'(Date VARCHAR(20), Draw int(10), Results VARCHAR(50), Winner VARCHAR(50), UNIQUE(Draw))');
-    ADOQuery1.ExecSQL;
+    MyQuery1.SQL.Clear;
+    MyQuery1.SQL.Add('CREATE TABLE IF NOT EXISTS '+le.Name+'(Date VARCHAR(20), Draw int(10), Results VARCHAR(50), Winner VARCHAR(50), UNIQUE(Draw))');
+    MyQuery1.ExecSQL;
   finally
-    ADOQuery1.SQL.Clear;
-    ADOQuery1.SQL.Add('INSERT INTO `'+le.Name+'`(`Date`,`Draw`,`Results`,`Winner`) VALUES (');
-    ADOQuery1.SQL.Add(''''+le.Date+''','+IntToStr(le.Draw)+','''+le.Results+''','''+le.Winner+''')');
-    ADOQuery1.SQL.Add(' ON DUPLICATE KEY UPDATE Date='''+le.Date+''', Results='''+le.Results+''', Winner='''+le.Winner+'''');
-    ADOQuery1.ExecSQL;
+    MyQuery1.SQL.Clear;
+    MyQuery1.SQL.Add('INSERT INTO `'+le.Name+'`(`Date`,`Draw`,`Results`,`Winner`) VALUES (');
+    MyQuery1.SQL.Add(''''+le.Date+''','+IntToStr(le.Draw)+','''+le.Results+''','''+le.Winner+''')');
+    MyQuery1.SQL.Add(' ON DUPLICATE KEY UPDATE Date='''+le.Date+''', Results='''+le.Results+''', Winner='''+le.Winner+'''');
+    MyQuery1.ExecSQL;
   end;
 end;
 //------------------------------------------------------------------------------
@@ -183,11 +189,12 @@ end;
 function TMainForm.ExtractLottoName(divEl : IHTMLElement) : string;
 var
   logo: string;
-  ps: integer;
+  ps,len: integer;
 begin
   logo:=divEl.getAttribute('className',0);
-  ps:=ansipos('is-',logo)+2;
-  delete(logo,1,ps);
+  ps:=ansipos('is-',logo)+3;
+  len:=ansipos('css',logo)-ps-1;
+  logo:=copy(logo,ps,len);
   Result:=logo;
 end;
 //------------------------------------------------------------------------------
@@ -295,15 +302,15 @@ begin
    LogMemo.Lines.Append('Downloading is done.');
 
    if ParseSite(htmlBody) then begin
-      ADOTable1.Active:=true;
+      MyTable1.Active:=true;
       DataSource1.Enabled:=true;
       DBGrid1.Enabled:=true;
-      ADOTable1.First;
-      if ADOTable1.RecordCount > 0 then
+      MyTable1.First;
+      if MyTable1.RecordCount > 0 then
       begin
-        ADOTable2.Close;
-        ADOTable2.TableName:=ADOTable1.FieldByName('name').AsString;
-        ADOTable2.Open;
+        MyTable2.Close;
+        MyTable2.TableName:=MyTable1.FieldByName('name').AsString;
+        MyTable2.Open;
         DataSource2.Enabled:=true;
         DBGrid2.Enabled:=true;
       end;
@@ -379,12 +386,17 @@ begin
   k4l0:=(root.children as IHTMLElementCollection).tags('div') as IHTMLElementCollection;
   celem:=((k4l0.item(0,0)  as IHTMLElement).children as IHTMLElementCollection).tags('div') as IHTMLElementCollection;
   k4l1:=celem.item(0,0) as IHTMLElement;
-  logo:=(k4l1.children as IHTMLElementCollection).item(0,0) as IHTMLElement;
+  str:=k4l1.getAttribute('className',0);
+  k4l2:=celem.item(1,0) as IHTMLElement;
+  str:=k4l2.getAttribute('className',0);
+  celem:= (k4l1.children as IHTMLElementCollection).tags('div') as IHTMLElementCollection;
+  logo:=celem.item(0,0) as IHTMLElement;
+//  logo:=k4l1.children as IHTMLElement;
+  str:=logo.getAttribute('className',0);
   le.Name:=ExtractLottoName(logo).Replace('-','_');
   if not IsNameExist(le.Name) then begin
     AppendLottoName(le.Name);
   end;
-  k4l2:=celem.item(1,0) as IHTMLElement;
   celem:= (k4l2.children as IHTMLElementCollection).tags('div') as IHTMLElementCollection;
   k4l3:= celem.item(0,0) as IHTMLElement;
   celem:= (k4l3.children as IHTMLElementCollection).tags('div') as IHTMLElementCollection;
@@ -437,7 +449,9 @@ end;
 
 //------------------------------------------------------------------------------
 procedure TMainForm.FormCreate(Sender: TObject);
+var  sConnStr: String;
 begin
+
   LogMemo.Clear;
   with ProgressBar1 do begin
     Parent:=StatusBar1;
@@ -448,16 +462,40 @@ begin
   end;
   CountDown:=UpDown1.Position*3600;
 
+ // MyConnection1. Params.UserName:=sUser;
+ // MyConnection1.Params.Password:=sPswd;
+ // MyConnection1.Params.Values['Server']:=sServer;
+ // MyConnection1.Params.Values['Port']:=sPort;
+
+  try
+    MyConnection1.Database:='mysql';
+    MyConnection1.Connected := True;
+  except
+   ShowMessage('Can`t connect to MySQL Server');
+   Halt;
+  end;
+
+  MyQuery1.SQL.Add('CREATE DATABASE IF NOT EXISTS ozlotto;');
+  MyQuery1.ExecSQL;
+  try
+    MyConnection1.Database:='ozlotto';
+    MyConnection1.Connected := True;
+  except
+    ShowMessage('ozlotto Datadase connection error!');
+    Halt;
+  end;
+
   LottoNames:=TStringList.Create;
   LoadLottoNames;
-  ADOTable1.Active:=true;
-  ADOTable1.First;
+  MyTable1.Active:=true;
+  MyTable1.First;
 
-  if ADOTable1.RecordCount > 0 then
+
+  if MyTable1.RecordCount > 0 then
   begin
-    ADOTable2.Close;
-    ADOTable2.TableName:=ADOTable1.FieldByName('name').AsString;
-    ADOTable2.Open;
+    MyTable2.Close;
+    MyTable2.TableName:=MyTable1.FieldByName('name').AsString;
+    MyTable2.Open;
     DataSource2.Enabled:=true;
     DBGrid2.Enabled:=true;
   end;
@@ -469,12 +507,12 @@ end;
 //------------------------------------------------------------------------------
 procedure TMainForm.DBGrid1CellClick(Column: TColumn);
 begin
-  ADOTable2.Active:=false;
-  ADOTable2.TableName:=DBGrid1.Fields[0].AsString;
+  MyTable2.Active:=false;
+  MyTable2.TableName:=DBGrid1.Fields[0].AsString;
   DataSource2.Enabled:=true;
   DBGrid2.Enabled:=true;
-  StatusBar1.Panels[1].Text:=ADOTable2.TableName;
-  ADOTable2.Active:=true;
+  StatusBar1.Panels[1].Text:=MyTable2.TableName;
+  MyTable2.Active:=true;
 end;
 //------------------------------------------------------------------------------
 
